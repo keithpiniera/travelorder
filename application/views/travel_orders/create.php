@@ -571,6 +571,7 @@
 					$('#form-employee').prop('disabled', false);
 					$('#form-destination').prop('disabled', false);
 					$('#form-details').prop('disabled', false);
+					$('[name="tracking_number"]').prop('disabled', true);
 					$('#selected-destination .disabled-added-item').addClass('added-item').removeClass('disabled-added-item');
 					$('#selected-employee .disabled-added-item').each(function(){
 						var myID = '<?php echo $this->session->userdata("employee_id"); ?>';

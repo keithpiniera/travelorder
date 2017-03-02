@@ -60,14 +60,13 @@ class PDTS_model extends CI_Model {
     return date_format($date_s, 'Y-m-d h:i:s A');
   }
 
-  public function create_pdts_document($data) {
+  public function create_document($data) {
 
     $details = $data['details'];
     unset($data['details']);
-
     $branch = 'CES';
-    $recipientDiv = $details['recommending_id'] == '' ? ($details['approving_division'] == '' ? $details['approving_office']:$details['approving_division']):$details['recommending_division'];// name = recommender or approver
-    $recipientName = $details['recommending_id'] == '' ? ($details['approving_'] == '' ? $details['approving_office']:$details['approving_name']):$details['recommending_name'];
+    $recipientDiv = $details['recommending_id'] == '' ? $details['approving_division']:$details['recommending_division'];// name = recommender or approver
+    $recipientName = $details['recommending_id'] == '' ? $details['approving_name']:$details['recommending_name'];
 
     $deadlineTime = $this->get_control_time('Correspondence');
     $dateExpected =  $this->compute_date_span_expected($deadlineTime);
@@ -84,13 +83,13 @@ class PDTS_model extends CI_Model {
     $col['particulars'] = '['. $this->session->userdata('division') .'-'. $this->session->userdata('name') .'] - '. 'Date from '. $details['date_from'] .' to '. $details['date_to'] .' | Destination(s) '. $data['destination_string'];
     $col['author'] = $this->session->userdata('name');
     $col['attachments'] = 'TO';
-    $col['sender'] = $this->session->userdata('division'); // division = preparer
+    $col['sender'] = $this->session->userdata('division')==''?$this->session->userdata('office'):$this->session->userdata('division'); // division = preparer // division = preparer
     $col['senderName'] = $this->session->userdata('name');
     $col['recipient'] =  $recipientDiv;
     $col['recipientName'] = $recipientName; 
     $col['dateReleased'] = date("Y-m-d H:i:s");
     $col['dateReceived'] = 'Pending'; 
-    $col['remarks'] = $details['recommend'] == 3? 'Waiting for Approval':'Waiting for Recommendation';
+    $col['remarks'] = $data['status']['status'];
     $col['courier'] = 'Direct';
     $col['personConcerned'] = $recipientName;
     $col['dateLog'] = date("Y-m-d H:i:s a");
@@ -172,11 +171,85 @@ class PDTS_model extends CI_Model {
     odbc_exec($this->conn, $control_query);
 
     if (!odbc_error()) odbc_commit($this->conn);
-    else { echo odbc_error();  odbc_rollback($this->conn); }
-    
-
-    return $sql;
+    else odbc_rollback($this->conn);
   }
 
+  public function forward_document($data){
+    $details = $data['details'];
+    $branch = 'CES';
+    unset($data['details']);
+
+    // determine recipient
+    if ($details['recommend'] == 0) {
+      // recommender
+      $recipientDiv = $details['recommending_division'];
+      $recipientName = $details['recommending_name'];
+    }
+    elseif ($details['recommend'] == 1 || $details['approve'] == 1 || $details['approve'] == 2) {
+      // preparer
+      $recipientDiv = $details['preparing_division'];
+      $recipientName = $details['preparing_name'];
+    }
+    elseif ($details['recommend'] == 2 || $details['recommend'] == 3) {
+      // approver
+      $recipientDiv = $details['approving_division'];
+      $recipientName = $details['approving_name'];
+    }
+
+    $deadlineTime = $this->get_control_time('Correspondence');
+    $dateExpected =  $this->compute_date_span_expected($deadlineTime);
+    $dateSpanDeadline = $this->get_control_time('Internal');
+    $dateSpan =  $this->compute_date_span_expected($dateSpanDeadline);
+
+    $col['barcode'] = $details['tracking_number']; // tracking code
+    $col['thread'] = $details['tracking_number'].'-1-'.$branch;
+    $col['sender'] = $this->session->userdata('division')==''?$this->session->userdata('office'):$this->session->userdata('division'); // division = preparer
+    $col['senderName'] = $this->session->userdata('name');
+    $col['recipient'] =  $recipientDiv;
+    $col['recipientName'] = $recipientName; 
+    $col['dateReleased'] = date("Y-m-d H:i:s");
+    $col['dateReceived'] = 'Pending'; 
+    $col['remarks'] = $data['status']['status'];
+    $col['personConcerned'] = $recipientName;
+    $col['dateLog'] = date("Y-m-d H:i:s a");
+    $col['status'] = 0;
+    $col['forwardCounter'] = 0;
+    $col['dateExpected'] = $dateExpected; // date
+    $col['dateSpan'] = $dateSpan; // date
+
+
+     $sql = "UPDATE [dbo].[document]
+           SET [sender] = '$col[sender]'
+           ,[senderName] = '$col[senderName]'
+           ,[recipient] = '$col[recipient]'
+           ,[recipientName] = '$col[recipientName]'
+           ,[dateReleased] = '$col[dateReleased]'
+           ,[dateReceived] = '$col[dateReceived]'
+           ,[remarks] = '$col[remarks]'
+           ,[personConcerned] = '$col[personConcerned]'
+           ,[dateLog] = '$col[dateLog]'
+           ,[status] = '$col[status]'
+           ,[forwardCounter] = '$col[forwardCounter]'
+           ,[dateExpected] = '$col[dateExpected]'
+           ,[dateSpan] = '$col[dateSpan]'
+           WHERE [barcode] = '$col[barcode]'";
+ 
+    //for document logs
+    $logQuery = "INSERT INTO document_logs(documentID,threadID,docTime,docDescription)VALUES('$col[barcode]','$col[thread]','$col[dateLog]','Transaction has been forwarded - author: ".$this->session->userdata['name']." || Concerned Division/Unit(s): ".$recipientDiv."')";
+    //end
+  
+    //for user notifications
+    $notifQuery = "INSERT INTO notifications(recipient,recipientName,barcode,thread,status,notificationDate,notificationStatus)VALUES('$recipientDiv','$recipientName','$col[barcode]','$col[thread]','1','$col[dateLog]','Pending Transaction')";
+    //end
+    
+    odbc_autocommit($this->conn, false);
+    odbc_exec($this->conn, $sql);
+    odbc_exec($this->conn, $logQuery);
+    odbc_exec($this->conn, $notifQuery);
+
+    if (!odbc_error()) odbc_commit($this->conn);
+    else odbc_rollback($this->conn);
+
+  }
 }
 ?>

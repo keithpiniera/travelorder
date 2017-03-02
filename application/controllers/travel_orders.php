@@ -217,13 +217,20 @@ class Travel_Orders extends CI_Controller {
             $travel['travel_id'] = $travel_id;
             $this->travel_orders_model->update_travel($travel, $employees, $destinations);
             $this->logs_model->log_edit($travel_id);
+            // update transaction in pdts
+            $data = $this->prepare_travel_details($travel_id);
+            $this->pdts_model->forward_document($data);
         } else {
             $travel['date_prepared'] = date('Y-m-d');
             $travel['preparing_id'] = $this->session->userdata('employee_id');
             $travel_id = $this->travel_orders_model->insert_new_travel($travel, $employees, $destinations);
             $this->logs_model->log_create($travel_id);
+            // create new transaction in pdts
+            $data = $this->prepare_travel_details($travel_id);
+            $this->pdts_model->create_document($data);
         }
         
+    
         echo $travel_id;
     }
 
@@ -233,7 +240,6 @@ class Travel_Orders extends CI_Controller {
     }
 
     public function generate_time_of_departure(){
-
         $option = array();
         $meridiem = array("AM","PM");
         foreach ($meridiem as $m) {
@@ -247,7 +253,6 @@ class Travel_Orders extends CI_Controller {
                 }
             }
         }
-
         echo json_encode($option);
     }
 
@@ -357,9 +362,7 @@ class Travel_Orders extends CI_Controller {
         $this->lumino_load_view('travel_orders/by_status', $data);
     }
 
-    public function print_preview($travel_id){
-        $data = array();
-        $this->load->helper('dompdf');
+    private function prepare_travel_details($travel_id){
         // get travel details
         $data['details'] = $this->travel_orders_model->get_travel_details($travel_id);
         foreach ($data['details'] as &$detail) {
@@ -383,6 +386,14 @@ class Travel_Orders extends CI_Controller {
             $data['destination_string'] .= $this->generate_destination_string($destination['destination_id']).'; ';
         }
 
+        $officers = $this->travel_orders_model->get_employee($data['details']['preparing_id']);
+        $data['details']['preparing_name'] = '';
+        $data['details']['preparing_division'] = '';
+        foreach ($officers as $officer) {
+            $data['details']['preparing_name'] = $officer['name'];
+            $data['details']['preparing_division'] = $officer['division'];
+        }
+
         $officers = $this->travel_orders_model->get_employee($data['details']['recommending_id']);
         $data['details']['recommending_name'] = '';
         $data['details']['recommending_position'] = '';
@@ -401,7 +412,23 @@ class Travel_Orders extends CI_Controller {
             $data['details']['approving_division'] = empty($officer['division']) ? $officer['office']: $officer['division'];
         }
 
-        //$this->load->view('travel_orders/print', $data);
+        $data['access_level']['type'] = 'commoner';
+        $data['access_level']['can_print'] = false;
+        $data['access_level']['can_cancel'] = false;
+        $data['access_level']['can_recommend'] = false;
+        $data['access_level']['can_approve'] = false;
+        $data['access_level']['can_decline'] = false;
+        $data['access_level']['can_edit'] = false;
+
+        $data['status'] = $this->generate_travel_status($data['details'], $data['access_level']);
+
+        return $data;
+    }
+
+    public function print_preview($travel_id){
+        $data = array();
+        $this->load->helper('dompdf');
+        $data = $this->prepare_travel_details($travel_id);
         $html = $this->load->view('travel_orders/print', $data, TRUE);
         pdf_create_a4($html, 'travel_order', TRUE);
     }
@@ -410,6 +437,10 @@ class Travel_Orders extends CI_Controller {
         $travel_id = $_POST['travel_id'];
         $this->travel_orders_model->recommend_travel($travel_id);
         $this->logs_model->log_recommend($travel_id);
+        // create new transaction in pdts
+        $data = $this->prepare_travel_details($travel_id);
+        $this->pdts_model->forward_document($data);
+
 
         echo '<div class="alert bg-success" role="alert">
                 <svg class="glyph stroked checkmark"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#stroked-checkmark"></use></svg>
@@ -422,6 +453,9 @@ class Travel_Orders extends CI_Controller {
         $travel_id = $_POST['travel_id'];
         $this->travel_orders_model->approve_travel($travel_id);
         $this->logs_model->log_approve($travel_id);
+        // create new transaction in pdts
+        $data = $this->prepare_travel_details($travel_id);
+        $this->pdts_model->forward_document($data);
 
         echo '<div class="alert bg-success" role="alert">
                 <svg class="glyph stroked checkmark"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#stroked-checkmark"></use></svg>
@@ -434,7 +468,10 @@ class Travel_Orders extends CI_Controller {
         $travel_id = $_POST['travel_id'];
         $remarks = $_POST['remarks'];
         $this->travel_orders_model->cancel_travel($travel_id, $remarks);
-        $this->logs_model->log_cancel($travel_id);
+        $this->logs_model->log_cancel($travel_id,$remarks);
+        // create new transaction in pdts
+        $data = $this->prepare_travel_details($travel_id);
+        $this->pdts_model->forward_document($data);
 
         echo '<div class="alert bg-success" role="alert">
                 <svg class="glyph stroked checkmark"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#stroked-checkmark"></use></svg>
@@ -449,7 +486,10 @@ class Travel_Orders extends CI_Controller {
         $access = $_POST['access'];
         if ( $access == 'recommender' )  $this->travel_orders_model->recommender_decline_travel($travel_id, $remarks);
         if ( $access == 'approver' )  $this->travel_orders_model->approver_decline_travel($travel_id, $remarks);
-        $this->logs_model->log_decline($travel_id);
+        $this->logs_model->log_decline($travel_id,$remarks);
+        // create new transaction in pdts
+        $data = $this->prepare_travel_details($travel_id);
+        $this->pdts_model->forward_document($data);
 
         echo '<div class="alert bg-success" role="alert">
                 <svg class="glyph stroked checkmark"><use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="#stroked-checkmark"></use></svg>
@@ -684,55 +724,6 @@ class Travel_Orders extends CI_Controller {
         $this->load->view('travel_orders/calendar', $data);
         $this->load->view('templates/main-close', $data);
         $this->load->view('templates/footer', $data);
-    }
-
-    public function create_pdts_document($data=""){
-        $travel_id = 33;
-
-        // get travel details
-        $data['details'] = $this->travel_orders_model->get_travel_details($travel_id);
-        foreach ($data['details'] as &$detail) {
-            $detail['date_from'] = date('F d, Y', strtotime($detail['date_from']));
-            $detail['date_to'] = date('F d, Y', strtotime($detail['date_to']));
-            $detail['date_prepared'] = date('F d, Y', strtotime($detail['date_prepared']));
-        }
-        $data['details'] = $data['details'][0];
-        
-        // get travel employees
-        $data['employees'] = $this->travel_orders_model->get_travel_employees($travel_id);
-        foreach ($data['employees'] as &$employee) {
-            // get employee position
-            $emp = $this->travel_orders_model->get_employee($employee['employee_id']);
-            $employee['position'] = $emp[0]['position'];
-        }
-        // get travel destinations
-        $data['destinations'] = $this->travel_orders_model->get_travel_destinations($travel_id);
-        $data['destination_string'] = '';
-        foreach ($data['destinations'] as $destination) {
-            $data['destination_string'] .= $this->generate_destination_string($destination['destination_id']).'; ';
-        }
-
-        $officers = $this->travel_orders_model->get_employee($data['details']['recommending_id']);
-        $data['details']['recommending_name'] = '';
-        $data['details']['recommending_position'] = '';
-        foreach ($officers as $officer) {
-            $data['details']['recommending_name'] = $officer['name'];
-            $data['details']['recommending_designation'] = $officer['designation'];
-            $data['details']['recommending_division'] = $officer['division'];
-        }
-
-        $officers = $this->travel_orders_model->get_employee($data['details']['approving_id']);
-        $data['details']['approving_name'] = '';
-        $data['details']['approving_position'] = '';
-        foreach ($officers as $officer) {
-            $data['details']['approving_name'] = $officer['name'];
-            $data['details']['approving_designation'] = $officer['designation'];
-            $data['details']['approving_division'] = empty($officer['division']) ? $officer['office']: $officer['division'];
-        }
-        
-        echo "<pre>";
-        print_r( $this->pdts_model->create_pdts_document($data));
-        echo "</pre>";
     }
 }
 ?>

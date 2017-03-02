@@ -63,6 +63,7 @@ class Travel_Orders_Model extends CI_Model {
     }
 
     public function update_travel($details, $employees, $destinations){
+        unset($details['tracking_number']);
         $this->db->trans_start();
             $this->db->where('travel_id', $details['travel_id']);
             $this->db->update('travel_details', $details);
