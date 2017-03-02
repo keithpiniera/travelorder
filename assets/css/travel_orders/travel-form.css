@@ -1,0 +1,139 @@
+
+			label {
+				width: 300px;
+			}
+			textarea {
+				resize: none;
+			}
+			select {
+				padding: 1px 0;
+			}
+
+			.trow {
+				display: flex;
+				flex-direction: row;
+				flex-wrap: nowrap;
+				justify-content: flex-start;
+				align-items: flex-start;
+				align-content: flex-start;
+				width: 100%;
+				padding: 3px 0;
+			}
+			.trow > div:nth-child(2),
+			.trow > div:nth-child(3),
+			.trow > div:nth-child(4),
+			.trow > div:nth-child(6) {
+				width: 17%;
+			}
+			.trow > div:nth-child(5) {
+				width: 30%;
+			}
+			.trow > div:nth-child(1) {
+				width: 3%;
+			}
+			.tbody input,
+			.tbody select,
+			.tbody textarea {
+				width: 100%;
+				height: 100%;
+			}
+			.trow > div:nth-child(6) > input {
+				width: 70%;
+				height: 50%;
+			}
+			.trow > div:nth-child(6) > label {
+				width: 27%;
+				display: inline-block;
+			}
+			.thead .trow > div {
+				text-align: center;
+				font-weight: bold;
+			}
+			.tbl {
+				padding: 0px !important;
+				margin-bottom: 15px;
+			}
+			.thead {
+				border-bottom: 1px solid saddlebrown;
+			}
+			.tbody .trow {
+				border-bottom: 1px dotted #89817e;
+			}
+			.tbody .trow:nth-child(odd):not(:last-child) {
+				background-color: antiquewhite;
+			}
+			.trow > div {
+				padding: 3px 5px;
+				height: 100%;
+			}
+			.add-control input{
+				width: 30px !important;
+				height: auto !important;
+				text-align: center;
+			}
+			.add-control {
+				justify-content: center;
+				align-items: center;
+				padding: 15px;
+			}
+			.save-control {
+				text-align: right;
+			}
+			.tbody > .trow:first-child .x-btn{
+				display: none;
+			}
+
+			.to-details input[type="text"],
+			.to-details textarea,
+			.to-details select
+			{
+				width: 90%;
+			}
+
+			.to-details span {
+				margin-right: 15px;
+				margin-left: 1px;
+			}
+			.to-details > div {
+				margin-bottom: 30px;
+			}
+
+			.datalist {
+				background: white;
+				position: absolute;
+				box-shadow: 0px 3px 6px #888;
+			}
+			.datalist > div {
+				padding: 2px;
+			}
+			.datalist > div:hover {
+				background: #0071bc;
+				color: white;
+			}
+
+			.btn-xs {
+				margin: 2px;
+			}
+
+			.to-details .group-2 {
+				display: none;
+			}
+
+			#destinations > div.active {
+				background-color: bisque;
+			}
+			#destinations > div {
+				cursor: pointer;
+			}
+
+			#pagination {
+				text-align: center;
+			}
+			#pagination > * {
+				display: inline-block;
+				border-radius: 3px;
+				padding: 3px 10px;
+				text-align: center;
+				margin: 1px;
+				background-color: lightgrey;
+			}
