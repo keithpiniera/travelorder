@@ -90,11 +90,15 @@
 	</div><!--/.sidebar-->
 	<script type="text/javascript">
 		$('.nav.menu').find('a[href="<?php echo $page; ?>"]').parent().addClass('active');
+		$('form[role="search"]').submit(function(e){
+			e.preventDefault();
+			return false;
+		});
 		$('form[role="search"]').on('keyup', 'input[type="text"]', function(e){
+			e.preventDefault();
 			var k = e.which;
 			if (k != 13) return;
 			if ($(this).val() == '') return;
-
 			window.location.href = '<?php echo base_url(); ?>index.php/travel_orders/search/'+ encodeURIComponent($(this).val());
 		});
 	</script>

@@ -299,7 +299,7 @@ class Travel_Orders extends CI_Controller {
         }
     }
 
-    private function get_travel_by_status($status,$limit="",$offset=""){
+    private function get_travel_by_status($status,$limit="",$offset="",$keyword=""){
         if ( $status == 'pending') {
             return $this->travel_orders_model->get_travels_pending($limit,$offset);
         } elseif ( $status == 'canceled') {
@@ -313,7 +313,7 @@ class Travel_Orders extends CI_Controller {
         } elseif ( $status == 'for_approval') {
             return $this->travel_orders_model->get_travels_for_approval($limit,$offset);
         } elseif ( $status == 'search') {
-            return $this->travel_orders_model->get_travel_details($_POST['keyword']);
+            return $this->travel_orders_model->search_travel($keyword);
         } elseif ( $status == 'all') {
             return $this->travel_orders_model->get_travels_all($limit,$offset);
         } else {
@@ -326,7 +326,8 @@ class Travel_Orders extends CI_Controller {
         $status = $_POST['status'];
         $limit = $_POST['limit'];
         $offset = $_POST['offset'];
-        $my_travels = $this->get_travel_by_status($status,$limit,$offset);
+        $keyword = $status == 'search' ? $_POST['keyword']:'';
+        $my_travels = $this->get_travel_by_status($status,$limit,$offset,$keyword);
 
         $i = 0;
         foreach ($my_travels as &$travel) {
@@ -715,6 +716,8 @@ class Travel_Orders extends CI_Controller {
         $data['page_header'] = "Travel Orders";
         $data['panel_header'] = 'Search';
         $data['keyword'] = $keyword;
+
+        $data['rows'] = count($this->get_travel_by_status('search','','',$keyword));
 
         $this->lumino_load_view('travel_orders/by_status', $data);
     }

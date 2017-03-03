@@ -342,6 +342,16 @@ class Travel_Orders_Model extends CI_Model {
         return $query->result_array();
     }
 
+    public function search_travel($keyword){
+        $this->db->from('travel_details');
+        $this->db->where('travel_id', $keyword);
+        $this->db->or_like('tracking_number', $keyword,'both');
+        $this->db->or_like('purpose', $keyword,'both');
+        //die($this->db->get_compiled_select());
+        $query = $this->db->get();
+        return $query->result_array();
+    }
+
     public function get_travel_destinations($travel_id){
         $this->db->from('travel_destinations');
         $this->db->where('travel_id', $travel_id);
