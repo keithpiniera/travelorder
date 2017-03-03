@@ -26,14 +26,18 @@ class Travel_Orders_Model extends CI_Model {
         return $query->result();
     }
 
-    public function get_signatories(){
+    public function get_signatories($division="", $office=""){
+        if ($division=="" && $office=="") {
+            $division = $this->session->userdata('division');
+            $office = $this->session->userdata('office');
+        }
         $this->db->from('employees');
         $this->db->where('is_head', 1);
         $this->db->group_start();
-        $this->db->where('division', $this->session->userdata('division'));
+        $this->db->where('division', $division);
         $this->db->or_where('division', '');
         $this->db->group_end();
-        $this->db->where('office', $this->session->userdata('office'));
+        $this->db->where('office', $office);
         $this->db->order_by('name', 'asc'); 
         $query = $this->db->get();
         return $query->result();

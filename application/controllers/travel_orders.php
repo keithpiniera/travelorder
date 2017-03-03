@@ -136,8 +136,13 @@ class Travel_Orders extends CI_Controller {
             $detail['preparing_name'] = $preparing[0]['name'];
         }
 
+        // get preparing division and office
+        $prepared_by = $this->travel_orders_model->get_employee($detail['preparing_id']);
+        $preparing_division = $prepared_by[0]['division'];
+        $preparing_office = $prepared_by[0]['office'];
+
         $data['employees'] = $this->travel_orders_model->get_employees();
-        $data['signatories'] = $this->travel_orders_model->get_signatories();
+        $data['signatories'] = $this->travel_orders_model->get_signatories($preparing_division,$preparing_office);
         $data['project_codes'] = $this->fmis_model->get_project_codes_like();
 
         $data['province'] = $this->address_model->get_provinces();
@@ -343,8 +348,10 @@ class Travel_Orders extends CI_Controller {
             $is_outed = strtotime(date('Y-m-d')) > strtotime($travel['date_from']) ? 'outdated':''; 
 
             echo '<tr data-index="'.$i.'" data-travelid="'. $travel['travel_id'] .'" class="'.$is_outed.'">';
-            echo '<td>'.$travel['str_inclusive'].'</td>';
+            echo '<td>'.$travel['tracking_number'].'</td>';
+            echo '<td>'.$travel['purpose'].'</td>';
             echo '<td>'.$str_destination.'</td>';
+            echo '<td>'.$travel['str_inclusive'].'</td>';
             echo '<td>'.$travel['time_of_departure'].'</td>';
             echo '<td>'.$prepared_by.'</td>';
             echo '</tr>';

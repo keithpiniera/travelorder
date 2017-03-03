@@ -176,8 +176,9 @@ class PDTS_model extends CI_Model {
 
   public function forward_document($data){
     $details = $data['details'];
-    $branch = 'CES';
     unset($data['details']);
+    $branch = 'CES';
+    $dateReceived = 'Pending';
 
     // determine recipient
     if ($details['recommend'] == 0) {
@@ -185,10 +186,11 @@ class PDTS_model extends CI_Model {
       $recipientDiv = $details['recommending_division'];
       $recipientName = $details['recommending_name'];
     }
-    elseif ($details['recommend'] == 1 || $details['approve'] == 1 || $details['approve'] == 2) {
+    elseif ($details['recommend'] == 1 || $details['approve'] == 1 || $details['approve'] == 2 || $details['is_cancelled']==1) {
       // preparer
       $recipientDiv = $details['preparing_division'];
       $recipientName = $details['preparing_name'];
+      if ( $details['is_cancelled'] == 1) $dateReceived = 'Canceled';
     }
     elseif ($details['recommend'] == 2 || $details['recommend'] == 3) {
       // approver
@@ -208,7 +210,7 @@ class PDTS_model extends CI_Model {
     $col['recipient'] =  $recipientDiv;
     $col['recipientName'] = $recipientName; 
     $col['dateReleased'] = date("Y-m-d H:i:s");
-    $col['dateReceived'] = 'Pending'; 
+    $col['dateReceived'] = $dateReceived; 
     $col['remarks'] = $data['status']['status'];
     $col['personConcerned'] = $recipientName;
     $col['dateLog'] = date("Y-m-d H:i:s a");
@@ -233,13 +235,17 @@ class PDTS_model extends CI_Model {
            ,[dateExpected] = '$col[dateExpected]'
            ,[dateSpan] = '$col[dateSpan]'
            WHERE [barcode] = '$col[barcode]'";
- 
+    
+
+
+    $logDesc = $dateReceived == 'Pending' ? 'forwarded':'canceled';
+
     //for document logs
-    $logQuery = "INSERT INTO document_logs(documentID,threadID,docTime,docDescription)VALUES('$col[barcode]','$col[thread]','$col[dateLog]','Transaction has been forwarded - author: ".$this->session->userdata['name']." || Concerned Division/Unit(s): ".$recipientDiv."')";
+    $logQuery = "INSERT INTO document_logs(documentID,threadID,docTime,docDescription)VALUES('$col[barcode]','$col[thread]','$col[dateLog]','Transaction has been $logDesc - author: ".$this->session->userdata['name']." || Concerned Division/Unit(s): ".$recipientDiv."')";
     //end
-  
+    
     //for user notifications
-    $notifQuery = "INSERT INTO notifications(recipient,recipientName,barcode,thread,status,notificationDate,notificationStatus)VALUES('$recipientDiv','$recipientName','$col[barcode]','$col[thread]','1','$col[dateLog]','Pending Transaction')";
+    $notifQuery = "INSERT INTO notifications(recipient,recipientName,barcode,thread,status,notificationDate,notificationStatus)VALUES('$recipientDiv','$recipientName','$col[barcode]','$col[thread]','1','$col[dateLog]','$dateReceived Transaction')";
     //end
     
     odbc_autocommit($this->conn, false);

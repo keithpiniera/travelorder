@@ -335,7 +335,7 @@
 				                .attr("value", listEmployees[i].employee_id)
 				                .attr("data-mobile", listEmployees[i].mobile_number)
 				                .text(listEmployees[i].name)
-				                <?php if ($this->session->userdata('type')!='preparer'): ?>
+				                <?php if ($this->session->userdata('type')!='preparer'&&empty($travel_id)): ?>
 										.prop('selected', true)
 								<?php endif; ?>
 				    );
@@ -678,7 +678,7 @@
 				});
 				<?php endif; ?>
 
-				<?php if ($this->session->userdata('type')!='preparer'): ?>
+				<?php if ($this->session->userdata('type')!='preparer'&&empty($travel_id)): ?>
 					$('.list-employee').trigger('change')
 				<?php endif; ?>
 

@@ -1,8 +1,10 @@
 		<style type="text/css">
-			.table-my-travels th:nth-child(1){width: 18%;}
+			.table-my-travels th:nth-child(1){width: 10%;}
 			.table-my-travels th:nth-child(2){width: 30%;}
-			.table-my-travels th:nth-child(3){width: 15%;}
-			.table-my-travels th:nth-child(4){width: 22%;}
+			.table-my-travels th:nth-child(3){width: 25%;}
+			.table-my-travels th:nth-child(4){width: 10%;}
+			.table-my-travels th:nth-child(5){width: 10%;}
+			.table-my-travels th:nth-child(6){width: 15%;}
 			.fixed-table-loading {
 				display: none;
 			}
@@ -21,8 +23,10 @@
 						<table data-toggle="table" data-url="" id="table-<?php echo strtolower($panel_header); ?>" class="table-my-travels">
 						    <thead>
 						    <tr>
-						        <th data-field="dates">Inclusive Dates of Travel</th>
+						        <th data-field="tracking">Tracking No.</th>
+						        <th data-field="purpose">Purpose</th>
 						        <th data-field="destination">Destination</th>
+						        <th data-field="dates">Date</th>
 						        <th data-field="time">Time of Departure</th>
 						        <th data-field="prepared-by">Prepared by</th>
 								<!-- 
