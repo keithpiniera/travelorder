@@ -50,6 +50,12 @@ class PDTS_model extends CI_Model {
     return $data;
   }
 
+  public function get_document_logs($tracking_number){
+    $sql = "SELECT * FROM document_logs WHERE documentID = '{$tracking_number}' ORDER BY id DESC";
+    $rows = $this->db_query($sql);
+    return $rows;
+  }
+
   public function compute_date_span_expected($date){
     // compute date span and expected
     $date_new = substr($date, 0,2).' hours'; //convert time

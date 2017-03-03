@@ -314,8 +314,13 @@
 			</div>
 		</div><!--/.row-->
 
-		<!-- load modals -->
-		<?php if ( !empty($travel_id)) $this->load->view('travel_orders/modals'); ?>
+		<!-- load modals and logs -->
+		<?php
+			if ( !empty($travel_id)) {
+			   $this->load->view('travel_orders/pdts-logs');
+			   $this->load->view('travel_orders/modals');
+			}
+		?>
 
 		<script type="text/javascript">	
 			var listProvinces = <?php echo json_encode($province); ?>;

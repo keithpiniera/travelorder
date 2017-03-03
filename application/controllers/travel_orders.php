@@ -722,6 +722,19 @@ class Travel_Orders extends CI_Controller {
         $this->lumino_load_view('travel_orders/by_status', $data);
     }
 
+    public function load_pdts_logs(){
+        $logs = $this->pdts_model->get_document_logs($_POST['tracking_number']);
+
+        $i = 0;
+        foreach ($logs as $l) {
+            echo '<tr data-index="'.$i.'">';
+            echo '<td>'.date('D M d, Y H:i A', strtotime($l['docTime'])).'</td>';
+            echo '<td>'.$l['docDescription'].'</td>';
+            echo '</tr>';
+            $i++;
+        }
+    }
+
     public function calendar(){
         $data['page'] = __FUNCTION__;
         $data['page_header'] = "Calendar";
